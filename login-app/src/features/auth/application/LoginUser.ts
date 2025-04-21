@@ -1,8 +1,10 @@
-import { loginApi } from "../infraestructure/api";
-import { useAuthStore } from "../auth-store";
+import { loginUser } from "../infraestructure/api";
 
-export async function loginUser(email: string, password: string) {
-	const user = await loginApi(email, password);
-	useAuthStore.getState().setUser(user);
-	return user;
+export async function loginUseCase(email: string, password: string) {
+	const response = await loginUser(email, password);
+	return response;
+}
+
+export function logoutUseCase() {
+	localStorage.removeItem("token");
 }

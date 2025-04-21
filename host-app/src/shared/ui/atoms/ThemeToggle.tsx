@@ -1,15 +1,21 @@
-import React = require("react");
-import { Button } from "../../../components/ui/button";
-import { useTheme } from "next-themes";
+import { useTheme as useNextTheme } from "next-themes";
+import { IconButton, Tooltip } from "@mui/material";
+import { LightMode, DarkMode } from "@mui/icons-material";
 
-export const ThemeToggle = () => {
-  const { theme, setTheme } = useTheme();
+const ThemeToggleButton = () => {
+  const { theme, setTheme } = useNextTheme();
+  const isDark = theme === "dark";
 
   return (
-    <Button onClick={() => setTheme(theme === "dark" ? "light" : "dark")}>
-      cambiar a {theme === "dark" ? "Light" : "Dark"}
-    </Button>
+    <Tooltip title="Cambiar tema">
+      <IconButton
+        color="primary"
+        onClick={() => setTheme(isDark ? "light" : "dark")}
+      >
+        {isDark ? <LightMode /> : <DarkMode />}
+      </IconButton>
+    </Tooltip>
   );
 };
 
-export default ThemeToggle;
+export default ThemeToggleButton;

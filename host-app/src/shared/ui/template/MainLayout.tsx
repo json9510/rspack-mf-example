@@ -1,7 +1,7 @@
 // biome-ignore lint/style/useImportType: <explanation>
 import { ReactNode } from "react";
-import React = require("react");
 import { Navbar } from "../../../widgets/Navbar";
+import React from "react";
 
 type Props = {
   children: ReactNode;
@@ -9,7 +9,7 @@ type Props = {
 
 export const MainLayout = ({ children }: Props) => {
   return (
-    <div className="min-h-screen flex flex-col bg-background text-foreground">
+    <div className="hidden">
       <Navbar />
       <main className="flex-1 p-4">{children}</main>
     </div>

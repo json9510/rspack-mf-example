@@ -1,17 +1,12 @@
-import type { User } from "../domain/User";
+import apiClient from "../../../shared/api/apiClient";
 
-export async function loginApi(email: string, password: string): Promise<User> {
-	return new Promise((resolve, reject) => {
-		setTimeout(() => {
-			if (email === "admin@enerbit.co" && password === "123456") {
-				resolve({
-					id: "1",
-					email: email,
-					token: "fake-token",
-				});
-			} else {
-				reject(new Error("Invalid credentials"));
-			}
-		}, 3000);
-	});
+export async function loginUser(email: string, password: string) {
+	try {
+		const response = await apiClient.post("/auth/token/", { username: email, password: password });
+		return response.data;
+	}
+	catch (error) {
+		console.error("Error during login:", error);
+		throw new Error("Login failed");
+	}
 }
