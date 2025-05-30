@@ -1,7 +1,7 @@
 // biome-ignore lint/style/useImportType: <explanation>
 import React from "react";
-import AppRoutes from "./routes";
-
-const App: React.FC = () => <AppRoutes />;
+const App = () => {
+  return <div>Standalone loginApp UI - no rutas activas aquí</div>;
+};
 
 export default App;

@@ -2,7 +2,7 @@ import axios from "axios";
 import { useAuthStore } from "../../features/auth/model/auth-store";
 
 const apiClient = axios.create({
-	baseURL: "https://ops.enerbit.dev/",
+	baseURL: "https://ops.enerbit.me/",
 	timeout: 10000,
 	headers: {
 		"Content-Type": "application/x-www-form-urlencoded",
@@ -12,7 +12,7 @@ const apiClient = axios.create({
 
 apiClient.interceptors.request.use(
 	(config) => {
-		const token = useAuthStore.getState().user?.access_token;
+		const token = useAuthStore.getState().session?.access_token;
 
 		if (token) {
 			config.headers.Authorization = `Bearer ${token}`;

@@ -60,15 +60,15 @@ export const getTheme = (primary: string, secondary: string) => {
       body1: { fontSize: 14},
     },
     components: {
-      MuiCssBaseline: {
-        styleOverrides: `
-        @font-face {
-          font-family: 'Helvetica Neue LT Std';
-          src: url('https://ebdevmicrofront.blob.core.windows.net/resources/HelveticaLTStd-Roman.woff2') format('woff2');
-          font-display: swap;
-        }
-        `,
-      },
+      // MuiCssBaseline: {
+      //   styleOverrides: `
+      //   @font-face {
+      //     font-family: 'Helvetica Neue LT Std';
+      //     src: url('https://ebdevmicrofront.blob.core.windows.net/resources/HelveticaLTStd-Roman.woff2') format('woff2');
+      //     font-display: swap;
+      //   }
+      //   `,
+      // },
       MuiButton: {
         defaultProps: {
           style: {

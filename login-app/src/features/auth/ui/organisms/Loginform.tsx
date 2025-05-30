@@ -107,9 +107,9 @@ const LoginForm: React.FC<Props> = ({ onSubmit }) => {
           </Button>
         </Box>
 
-        <Box>
+        {/* <Box>
           <Button className="Forgot-password">Olvidé mi contraseña</Button>
-        </Box>
+        </Box> */}
       </Box>
     </form>
   );

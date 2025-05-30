@@ -1,36 +1,31 @@
 // src/features/auth/auth-store.ts
 import { create } from "zustand";
-import { loginUseCase } from "../application/LoginUser";
-import type { User } from "../domain/user";
+import { persist } from "zustand/middleware";
+import type { Session } from "../domain/session";
 
 interface AuthState {
-	user: User | null;
+	session: Session | null;
 	isAuthenticated: boolean;
 	isRequestingLogin: boolean;
 	setRequestingLogin: (isRequestingLogin: boolean) => void;
-	login: (email: string, password: string) => Promise<void>;
-	logout: () => void;
+	setSession: (session: Session) => void;
 }
 
-export const useAuthStore = create<AuthState>((set) => ({
-	user: null,
-	token: null,
-	isAuthenticated: false,
-	isRequestingLogin: false,
-	setRequestingLogin: (isRequestingLogin) => set({ isRequestingLogin }),
-	login: async (email, password) => {
-		
-		const user = await loginUseCase(email, password);
-		set({
-			user,
-			isAuthenticated: true,
-			isRequestingLogin: false,
-		});
-	},
-	logout: () => {
-		set({
-			user: null,
+export const useAuthStore = create<AuthState>()(
+	persist(
+		(set) => ({
+			session: null,
+			token: null,
 			isAuthenticated: false,
-		});
-	},
-}));
+			isRequestingLogin: false,
+			setSession: (session) => set({ session }),
+			setRequestingLogin: (isRequestingLogin) => set({ isRequestingLogin }),
+		}),
+		{
+			name: "auth",
+			partialize: (state) => ({
+				session: state.session,
+			}),
+		},
+	),
+);

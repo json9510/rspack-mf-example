@@ -1,0 +1,24 @@
+{
+  "name": "rspack-mf-example",
+  "version": "1.0.0",
+  "private": true,
+  "description": "React Module Federation Example with Rspack and Bun",
+  "scripts": {
+    "install:all": "bun install && cd host-app && bun install && cd ../login-app && bun install && cd ../home-app && bun install && cd ../service-detail && bun install",
+    "dev:host": "cd host-app && bun dev",
+    "dev:login": "cd login-app && bun dev",
+    "dev:home": "cd home-app && bun dev",
+    "dev:service-detail": "cd service-detail && bun dev",
+    "dev:all": "chmod +x start-all.sh && ./start-all.sh",
+    "build:all": "cd host-app && bun run build && cd ../login-app && bun run build && cd ../home-app && bun run build && cd ../service-detail && bun run build"
+  },
+  "workspaces": [
+    "host-app",
+    "login-app", 
+    "home-app",
+    "service-detail"
+  ],
+  "devDependencies": {
+    "typescript": "^5.8.2"
+  }
+}

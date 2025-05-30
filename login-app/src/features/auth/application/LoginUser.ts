@@ -1,9 +1,13 @@
-import { loginUser } from "../infraestructure/api";
+import type { AuthRepository } from "../domain/AuthRepository";
+import type { Session } from "../domain/session";
 
-export async function loginUseCase(email: string, password: string) {
-	const response = await loginUser(email, password);
-	return response;
-}
+export const loginUser = async (
+	repo: AuthRepository,
+	email: string,
+	password: string,
+): Promise<Session> => {
+	return await repo.loginUser(email, password);
+};
 
 export function logoutUseCase() {
 	localStorage.removeItem("token");

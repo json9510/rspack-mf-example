@@ -1,28 +1,30 @@
 import React, { lazy, useEffect } from "react";
 import LoginForm from "../../features/auth/ui/organisms/Loginform";
-import { loginUseCase } from "../../features/auth/application/LoginUser";
+import { loginUser } from "../../features/auth/application/LoginUser";
 import { Box, Grid } from "@mui/material";
 import { useAuthStore } from "../../features/auth/model/auth-store";
+import { useNavigate } from "react-router";
+import { AuthRepositoryImpl } from "../../features/auth/infraestructure/AuthRepositoryImpl";
 
 type Props = {
   currentClient: string;
 };
 
 const LoginPage = ({ currentClient }: Props) => {
-  console.log("🔥 Props recibidos en LoginPage remoto:", {
-    currentClient,
-  });
+  const { setRequestingLogin, setSession } = useAuthStore();
 
-  const { setRequestingLogin } = useAuthStore();
-
+  const navigate = useNavigate();
   const handleLogin = async (email: string, password: string) => {
     try {
       setRequestingLogin(true);
-      const user = await loginUseCase(email, password);
-      alert(`Bienvenido ${user}`);
-      setRequestingLogin(false);
+      const repo = new AuthRepositoryImpl();
+      const session = await loginUser(repo, email, password);
+
+      setSession(session);
+      navigate("/home", { replace: true });
     } catch (error) {
-      alert("Login failed");
+      setRequestingLogin(false);
+    } finally {
       setRequestingLogin(false);
     }
   };

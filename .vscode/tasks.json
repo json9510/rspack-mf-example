@@ -1,0 +1,60 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Start Host",
+      "type": "shell",
+      "command": "bun dev",
+      "options": {
+        "cwd": "${workspaceFolder}/host-app"
+      },
+      "problemMatcher": [],
+      "group": "build"
+    },
+    {
+      "label": "Start Login App",
+      "type": "shell",
+      "command": "bun dev",
+      "options": {
+        "cwd": "${workspaceFolder}/login-app"
+      },
+      "problemMatcher": [],
+      "group": "build"
+    },
+    {
+      "label": "Start Home App",
+      "type": "shell",
+      "command": "bun dev",
+      "options": {
+        "cwd": "${workspaceFolder}/home-app"
+      },
+      "problemMatcher": [],
+      "group": "build"
+    },
+    {
+      "label": "Start Overview",
+      "type": "shell",
+      "command": "bun dev",
+      "options": {
+        "cwd": "${workspaceFolder}/overview"
+      },
+      "problemMatcher": [],
+      "group": "build"
+    },
+    {
+      "label": "Start All Microfrontends",
+      "dependsOn": [
+        "Start Host",
+        "Start Login App",
+        "Start Home App",
+        "Start Overview"
+      ],
+      "dependsOrder": "parallel",
+      "problemMatcher": [],
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      }
+    }
+  ]
+}
