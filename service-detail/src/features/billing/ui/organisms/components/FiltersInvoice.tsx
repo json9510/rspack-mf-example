@@ -1,15 +1,14 @@
 import type React from "react";
 import { useState } from "react";
 import {
+  Box,
   FormControl,
-  InputLabel,
   Select,
   MenuItem,
   Button,
   type SelectChangeEvent,
-  Paper,
+  Typography,
 } from "@mui/material";
-import { Grid } from "@mui/material";
 import { useBillingStore } from "../../../model/billing-store";
 
 export const FiltersInvoice: React.FC = () => {
@@ -47,98 +46,164 @@ export const FiltersInvoice: React.FC = () => {
   const handleApplyFilter = () => {
     const monthFilterValue =
       monthFilter !== "" ? `${yearFilter}-${monthFilter}` : yearFilter;
+    console.log("Applied filter:", monthFilterValue);
+    // TODO: Trigger filter logic
   };
 
   const handleClearFilter = () => {
     setYearFilter("");
     setMonthFilter("");
+    console.log("Filters cleared");
+    // TODO: Trigger clear filter logic
   };
 
   return (
-    <Paper elevation={1} sx={{ p: 2, mb: 3 }}>
-      <Grid container spacing={2} alignItems="end">
-        <Grid size={{ xs: 12, md: 3 }}>
-          <FormControl fullWidth>
-            <InputLabel>🗓️ Buscar por año</InputLabel>
-            <Select
-              value={yearFilter}
-              onChange={(event: SelectChangeEvent<string>) =>
-                setYearFilter(event.target.value)
-              }
-              label="🗓️ Buscar por año"
-            >
-              <MenuItem value="">
-                <em>Todos los años</em>
-              </MenuItem>
-              {yearsList.map((year) => (
-                <MenuItem key={year} value={year.toString()}>
-                  {year}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-        </Grid>
-
-        <Grid size={{ xs: 12, md: 3 }}>
-          <FormControl fullWidth>
-            <InputLabel>📅 Buscar por mes</InputLabel>
-            <Select
-              value={monthFilter}
-              onChange={(event: SelectChangeEvent<string>) =>
-                setMonthFilter(event.target.value)
-              }
-              label="📅 Buscar por mes"
-              disabled={!yearFilter}
-            >
-              <MenuItem value="">
-                <em>Todos los meses</em>
-              </MenuItem>
-              {months.map((month) => (
-                <MenuItem key={month.key} value={month.key}>
-                  {month.value}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-        </Grid>
-
-        <Grid size={{ xs: 12, md: 2 }}>
-          <Button
-            variant="contained"
-            color="primary"
-            fullWidth
-            onClick={handleApplyFilter}
-            disabled={!yearFilter && !monthFilter}
-          >
-            🔍 Aplicar filtro
-          </Button>
-        </Grid>
-
-        <Grid size={{ xs: 12, md: 2 }}>
-          <Button
-            variant="outlined"
-            color="primary"
-            fullWidth
-            onClick={handleClearFilter}
-            disabled={!yearFilter && !monthFilter}
-          >
-            🧹 Limpiar filtro
-          </Button>
-        </Grid>
-
-        <Grid size={{ xs: 12, md: 2 }}>
-          <Button
-            variant="outlined"
-            color="secondary"
-            fullWidth
-            onClick={() => {
-              console.log("Export CSV functionality - TODO");
+    <Box 
+      sx={{ 
+        display: 'flex', 
+        gap: 2, 
+        alignItems: 'center',
+        mb: 3,
+        flexWrap: 'wrap'
+      }}
+    >
+      {/* Year Filter */}
+      <Box sx={{ minWidth: 200 }}>
+        <Typography 
+          variant="body2" 
+          sx={{ mb: 1, color: '#374151', fontWeight: 500 }}
+        >
+          Buscar por año
+        </Typography>
+        <FormControl fullWidth>
+          <Select
+            value={yearFilter}
+            onChange={(event: SelectChangeEvent<string>) =>
+              setYearFilter(event.target.value)
+            }
+            displayEmpty
+            sx={{
+              borderRadius: 2,
+              backgroundColor: 'white',
+              '& .MuiOutlinedInput-notchedOutline': {
+                borderColor: '#e5e7eb',
+              },
+              '&:hover .MuiOutlinedInput-notchedOutline': {
+                borderColor: '#d1d5db',
+              },
+              '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                borderColor: '#6b46c1',
+              },
             }}
           >
-            📊 Exportar CSV
-          </Button>
-        </Grid>
-      </Grid>
-    </Paper>
+            <MenuItem value="">
+              <Typography color="text.secondary">
+                Seleccionar año
+              </Typography>
+            </MenuItem>
+            {yearsList.map((year) => (
+              <MenuItem key={year} value={year.toString()}>
+                {year}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+      </Box>
+
+      {/* Month Filter */}
+      <Box sx={{ minWidth: 200 }}>
+        <Typography 
+          variant="body2" 
+          sx={{ mb: 1, color: '#374151', fontWeight: 500 }}
+        >
+          Buscar por mes
+        </Typography>
+        <FormControl fullWidth>
+          <Select
+            value={monthFilter}
+            onChange={(event: SelectChangeEvent<string>) =>
+              setMonthFilter(event.target.value)
+            }
+            disabled={!yearFilter}
+            displayEmpty
+            sx={{
+              borderRadius: 2,
+              backgroundColor: 'white',
+              '& .MuiOutlinedInput-notchedOutline': {
+                borderColor: '#e5e7eb',
+              },
+              '&:hover .MuiOutlinedInput-notchedOutline': {
+                borderColor: '#d1d5db',
+              },
+              '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                borderColor: '#6b46c1',
+              },
+              '&.Mui-disabled': {
+                backgroundColor: '#f9fafb',
+              },
+            }}
+          >
+            <MenuItem value="">
+              <Typography color="text.secondary">
+                Seleccionar mes
+              </Typography>
+            </MenuItem>
+            {months.map((month) => (
+              <MenuItem key={month.key} value={month.key}>
+                {month.value}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+      </Box>
+
+      {/* Apply Filter Button */}
+      <Box sx={{ alignSelf: 'flex-end' }}>
+        <Button
+          variant="text"
+          onClick={handleApplyFilter}
+          disabled={!yearFilter && !monthFilter}
+          sx={{
+            color: '#6b46c1',
+            fontWeight: 600,
+            textTransform: 'none',
+            py: 1.5,
+            px: 2,
+            '&:hover': {
+              backgroundColor: 'rgba(107, 70, 193, 0.04)',
+            },
+            '&:disabled': {
+              color: '#9ca3af',
+            },
+          }}
+        >
+          Aplicar filtro
+        </Button>
+      </Box>
+
+      {/* Clear Filter Button */}
+      <Box sx={{ alignSelf: 'flex-end' }}>
+        <Button
+          variant="text"
+          onClick={handleClearFilter}
+          disabled={!yearFilter && !monthFilter}
+          sx={{
+            color: '#6b46c1',
+            fontWeight: 600,
+            textTransform: 'none',
+            py: 1.5,
+            px: 2,
+            '&:hover': {
+              backgroundColor: 'rgba(107, 70, 193, 0.04)',
+            },
+            '&:disabled': {
+              color: '#9ca3af',
+            },
+          }}
+        >
+          Limpiar filtro
+        </Button>
+      </Box>
+    </Box>
   );
 };

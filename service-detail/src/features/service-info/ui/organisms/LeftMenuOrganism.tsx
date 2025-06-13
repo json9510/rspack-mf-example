@@ -1,46 +1,45 @@
 import type React from "react";
-import { useEffect } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useEffect, useState } from "react";
 import {
   Box,
   Card,
   CardContent,
   Typography,
-  Divider,
-  Alert,
-  CircularProgress,
-  Skeleton,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
   Chip,
   List,
   ListItem,
-  ListItemIcon,
   ListItemText,
   Button,
+  IconButton,
+  Alert,
+  CircularProgress,
+  Skeleton,
+  Avatar,
+  Divider,
 } from "@mui/material";
 import {
-  ContentPaste as ContentPasteIcon,
-  LocationCity as LocationCityIcon,
-  ModeOfTravel as ModeOfTravelIcon,
+  ExpandMore as ExpandMoreIcon,
   LocalOffer as LocalOfferIcon,
   Person as PersonIcon,
+  Settings as SettingsIcon,
+  Build as BuildIcon,
   Home as HomeIcon,
-  ElectricBolt as ElectricBoltIcon,
+  Description as DescriptionIcon,
   AccountTree as AccountTreeIcon,
-  CalendarToday as CalendarTodayIcon,
+  Edit as EditIcon,
+  KeyboardArrowDown as KeyboardArrowDownIcon,
+  Warning as WarningIcon,
 } from "@mui/icons-material";
 
 import { useServiceInfoUseCases } from "../../lib/index";
-import { UserSelector } from "../molecules/UserSelector";
 import type { AppUser } from "../../domain/repositories/AccountRepository";
-import {
-  formatFrontierDisplayInfo,
-  getFrontierTypeColor,
-  isFrontierRegisteredInXM,
-} from "../../domain/utils/frontierUtils";
 
 interface LeftMenuProps {
   serviceId: string;
-  userId?: string | null; // Make optional since we can read from URL
+  userId?: string | null;
 }
 
 export const LeftMenuOrganism: React.FC<LeftMenuProps> = ({
@@ -76,25 +75,35 @@ export const LeftMenuOrganism: React.FC<LeftMenuProps> = ({
   const { enerbitFrontiers, enerbitFrontiersError, isLoadingFrontiers } =
     stores.assignees;
 
-  // Handle user change from UserSelector
-  const handleUserChange = (user: AppUser) => {
-    setSelectedUser(user);
-    console.log("🎯 LeftMenu: User changed to:", user.name || user.user_id);
+  // Local state for accordion expansion
+  const [expanded, setExpanded] = useState<string[]>([
+    'etiquetas', 
+    'usuario', 
+    'estado',
+    'servicio',
+    'predio',
+    'plan',
+    'frontera'
+  ]);
+
+  const handleAccordionChange = (panel: string) => {
+    setExpanded(prev => 
+      prev.includes(panel) 
+        ? prev.filter(p => p !== panel)
+        : [...prev, panel]
+    );
   };
 
   // Execute use cases when serviceId changes
-  // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
   useEffect(() => {
     if (serviceId) {
       console.log("🎯 LeftMenu: Executing use cases for serviceId:", serviceId);
       getServiceInfo.execute(serviceId);
       getServiceStatus.execute(serviceId);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [serviceId]); // Only serviceId dependency to avoid infinite loops
+  }, [serviceId]);
 
   // Execute dependent use cases when service data is available
-  // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
   useEffect(() => {
     if (service?.service_account_id) {
       console.log(
@@ -102,20 +111,16 @@ export const LeftMenuOrganism: React.FC<LeftMenuProps> = ({
         service.service_account_id
       );
 
-      // If we have a specific userId, only fetch that user
       if (userId) {
         console.log("🎯 LeftMenu: Fetching specific user:", userId);
         getSpecificAppUser.execute(userId);
       } else {
-        // Otherwise, fetch all users and auto-select owner
         console.log("🎯 LeftMenu: Fetching all users - no specific userId");
         getServiceAccountRelationships.execute(service.service_account_id);
       }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [service?.service_account_id, userId]); // Include userId in dependencies
+  }, [service?.service_account_id, userId]);
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
   useEffect(() => {
     if (service?.measurement_point_id) {
       console.log(
@@ -124,27 +129,34 @@ export const LeftMenuOrganism: React.FC<LeftMenuProps> = ({
       );
       getEnerbitFrontiers.execute(service.measurement_point_id);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [service?.measurement_point_id]); // Only measurement_point_id dependency
+  }, [service?.measurement_point_id]);
+
+  // Get real data from backend
+  const serviceTags = service?.tags || [];
+  
+  const planInfo = {
+    current: service?.enerbit_electricity_supply_service?.service_type || "No especificado",
+    coverage: `${service?.enerbit_electricity_supply_service?.current_power || 0}kW / ${service?.enerbit_electricity_supply_service?.contract_power || 0}kW`,
+    startDate: service?.started_at ? new Date(service.started_at).toLocaleDateString() : "No especificado",
+    endDate: service?.ended_at ? new Date(service.ended_at).toLocaleDateString() : "Indefinido",
+    status: service?.enerbit_electricity_supply_service?.status || "Activo"
+  };
 
   if (isLoadingService) {
     return (
-      <Card elevation={2} sx={{ height: "100%" }}>
+      <Card 
+        elevation={0} 
+        sx={{ 
+          height: "100%", 
+          border: '1px solid #e5e7eb',
+          borderRadius: 2
+        }}
+      >
         <CardContent>
           <Skeleton variant="text" width="80%" height={40} />
-          <Skeleton
-            variant="rectangular"
-            width="100%"
-            height={200}
-            sx={{ my: 2 }}
-          />
+          <Skeleton variant="rectangular" width="100%" height={200} sx={{ my: 2 }} />
           <Skeleton variant="text" width="60%" height={30} />
-          <Skeleton
-            variant="rectangular"
-            width="100%"
-            height={150}
-            sx={{ my: 2 }}
-          />
+          <Skeleton variant="rectangular" width="100%" height={150} sx={{ my: 2 }} />
         </CardContent>
       </Card>
     );
@@ -152,7 +164,7 @@ export const LeftMenuOrganism: React.FC<LeftMenuProps> = ({
 
   if (serviceError) {
     return (
-      <Card elevation={2}>
+      <Card elevation={0} sx={{ border: '1px solid #e5e7eb', borderRadius: 2 }}>
         <CardContent>
           <Alert severity="error">{serviceError}</Alert>
         </CardContent>
@@ -162,363 +174,840 @@ export const LeftMenuOrganism: React.FC<LeftMenuProps> = ({
 
   if (!service) return null;
 
+  // Get primary user info from backend
+  const primaryUser = selectedAppUser || appUsers?.[0];
+  const userName = primaryUser?.pii?.names && primaryUser?.pii?.last_names 
+    ? `${primaryUser.pii.names} ${primaryUser.pii.last_names}`
+    : primaryUser?.username || "Usuario no disponible";
+  const userRole = "Propietario"; // This could come from ServiceAccountRelationship.relationship_type
+  const userEmail = primaryUser?.pii?.emails?.find(email => email.priority === 1)?.email || 
+                   primaryUser?.pii?.emails?.[0]?.email || "No disponible";
+  const userPhone = primaryUser?.pii?.phones?.find(phone => phone.priority === 1)?.phone || 
+                   primaryUser?.pii?.phones?.[0]?.phone || "No disponible";
+  const userLegalId = primaryUser?.pii?.legal_id_code || "No disponible";
+  const userInternalId = primaryUser?.id || "No disponible";
+
   return (
-    <Card elevation={2} sx={{ height: "100%", overflow: "auto" }}>
-      <CardContent sx={{ p: 3 }}>
-        {/* User Information Section - Replaced with UserSelector */}
-        <UserSelector
-          users={appUsers || []}
-          selectedUser={selectedAppUser}
-          isLoading={isLoadingAppUsers}
-          hasError={hasErrorAppUsers}
-          onUserChange={handleUserChange}
-        />
-
-        {/* Service Tags */}
-        {service.tags && service.tags.length > 0 && (
-          <Box sx={{ mb: 3 }}>
-            <Box display="flex" alignItems="center" mb={1}>
-              <LocalOfferIcon color="primary" sx={{ mr: 1 }} />
-              <Typography variant="h6" color="primary">
-                Etiquetas del servicio
-              </Typography>
-            </Box>
-            <Box display="flex" flexWrap="wrap" gap={1}>
-              {/* biome-ignore lint/suspicious/noExplicitAny: <explanation> */}
-              {service.tags.map((tag: any, index: number) => (
-                <Chip
-                  // biome-ignore lint/suspicious/noArrayIndexKey: <explanation>
-                  key={index}
-                  label={tag.name || tag}
-                  size="small"
-                  color="primary"
-                  variant="outlined"
-                />
-              ))}
-            </Box>
-          </Box>
-        )}
-
-        <Divider sx={{ my: 2 }} />
-
-        {/* Connection Status */}
-        <Box
-          sx={{
-            mb: 3,
-            p: 2,
-            bgcolor:
-              serviceStatus.relay_status === "ON"
-                ? "success.light"
-                : "warning.light",
-            borderRadius: 2,
+    <Card 
+      elevation={0} 
+      sx={{ 
+        height: "100%", 
+        overflow: "auto",
+        border: '1px solid #e5e7eb',
+        borderRadius: 2,
+        backgroundColor: 'white'
+      }}
+    >
+      <CardContent sx={{ p: 0 }}>
+        {/* User Header */}
+        <Box 
+          sx={{ 
+            p: 2, 
+            borderBottom: '1px solid #e5e7eb',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 2
           }}
         >
-          <Typography
-            variant="h6"
-            gutterBottom
-            color={
-              serviceStatus.relay_status === "ON"
-                ? "success.dark"
-                : "warning.dark"
-            }
+          <Avatar 
+            sx={{ 
+              bgcolor: '#6b46c1', 
+              width: 32, 
+              height: 32,
+              fontSize: '0.875rem',
+              fontWeight: 600
+            }}
           >
-            ⚡ Estado de Conexión
-          </Typography>
-          <Box display="flex" alignItems="center">
-            <ElectricBoltIcon
-              color={
-                serviceStatus.relay_status === "ON" ? "success" : "warning"
-              }
-              sx={{ mr: 1 }}
-            />
-            <Typography>
-              {isLoadingServiceStatus ? (
-                <CircularProgress size={16} />
-              ) : (
-                `Medidor ${
-                  serviceStatus.relay_status === "ON"
-                    ? "Conectado ✅"
-                    : "Desconectado ⚠️"
-                }`
-              )}
+            {userName.charAt(0).toUpperCase()}
+          </Avatar>
+          <Box sx={{ flex: 1 }}>
+            <Typography variant="body1" sx={{ fontWeight: 600, color: '#1f2937' }}>
+              {userName}
+            </Typography>
+            <Typography variant="body2" sx={{ color: '#6b7280', fontSize: '0.75rem' }}>
+              {userRole}
             </Typography>
           </Box>
+          <IconButton size="small" sx={{ color: '#6b7280' }}>
+            <KeyboardArrowDownIcon />
+          </IconButton>
         </Box>
 
-        <Divider sx={{ my: 2 }} />
-
-        {/* Service Information */}
-        <Box sx={{ mb: 3 }}>
-          <Box display="flex" alignItems="center" mb={2}>
-            <ContentPasteIcon color="secondary" sx={{ mr: 1 }} />
-            <Typography variant="h6" color="secondary">
-              📋 Información del servicio
-            </Typography>
-          </Box>
-
-          <List dense>
-            <ListItem>
-              <ListItemIcon>
-                <PersonIcon />
-              </ListItemIcon>
-              <ListItemText primary="ID del servicio" secondary={service.id} />
-            </ListItem>
-
-            {service.creg_subscriber?.niu && (
-              <ListItem>
-                <ListItemIcon>
-                  <PersonIcon />
-                </ListItemIcon>
-                <ListItemText
-                  primary="NIU"
-                  secondary={service.creg_subscriber.niu}
-                />
-              </ListItem>
-            )}
-
-            {service.measurement_point_id && (
-              <ListItem>
-                <ListItemIcon>
-                  <PersonIcon />
-                </ListItemIcon>
-                <ListItemText
-                  primary="ID punto de medida"
-                  secondary={service.measurement_point_id}
-                />
-              </ListItem>
-            )}
-
-            {service.meter?.serial && (
-              <ListItem>
-                <ListItemIcon>
-                  <HomeIcon />
-                </ListItemIcon>
-                <ListItemText
-                  primary="Serial del medidor"
-                  secondary={service.meter.serial}
-                />
-              </ListItem>
-            )}
-
-            {service.creg_subscriber?.voltage_level?.sui_code && (
-              <ListItem>
-                <ListItemIcon>
-                  <AccountTreeIcon />
-                </ListItemIcon>
-                <ListItemText
-                  primary="Nivel de tensión"
-                  secondary={service.creg_subscriber.voltage_level.sui_code}
-                />
-              </ListItem>
-            )}
-
-            {service.started_at && (
-              <ListItem>
-                <ListItemIcon>
-                  <CalendarTodayIcon />
-                </ListItemIcon>
-                <ListItemText
-                  primary="Fecha inicio servicio"
-                  secondary={new Date(service.started_at).toLocaleDateString(
-                    "es-CO"
-                  )}
-                />
-              </ListItem>
-            )}
-          </List>
-        </Box>
-
-        <Divider sx={{ my: 2 }} />
-
-        {/* Estate Information */}
-        {service.estate && (
-          <Box sx={{ mb: 3 }}>
-            <Box display="flex" alignItems="center" mb={2}>
-              <LocationCityIcon color="primary" sx={{ mr: 1 }} />
-              <Typography variant="h6" color="primary">
-                🏠 Información del predio
-              </Typography>
-            </Box>
-
-            <List dense>
-              {service.estate.address && (
-                <ListItem>
-                  <ListItemIcon>
-                    <HomeIcon />
-                  </ListItemIcon>
-                  <ListItemText
-                    primary="Dirección"
-                    secondary={service.estate.address}
-                  />
-                </ListItem>
-              )}
-
-              {service.estate.state && (
-                <ListItem>
-                  <ListItemIcon>
-                    <LocationCityIcon />
-                  </ListItemIcon>
-                  <ListItemText
-                    primary="Departamento"
-                    secondary={service.estate.state}
-                  />
-                </ListItem>
-              )}
-
-              {service.estate.city && (
-                <ListItem>
-                  <ListItemIcon>
-                    <LocationCityIcon />
-                  </ListItemIcon>
-                  <ListItemText
-                    primary="Ciudad"
-                    secondary={service.estate.city}
-                  />
-                </ListItem>
-              )}
-
-              {service.creg_subscriber?.sui_social_stratum && (
-                <ListItem>
-                  <ListItemIcon>
-                    <HomeIcon />
-                  </ListItemIcon>
-                  <ListItemText
-                    primary="Estrato"
-                    secondary={`${service.creg_subscriber.sui_social_stratum.sui_code} ${service.creg_subscriber.sui_social_stratum.description}`}
-                  />
-                </ListItem>
-              )}
-            </List>
-
-            <Button
-              variant="outlined"
-              size="small"
-              sx={{ mt: 1 }}
-              onClick={() => {
-                console.log("Navigate to estate detail:", service.estate?.id);
+        {/* Accordion Sections */}
+        <Box>
+          {/* Etiquetas del servicio */}
+          <Accordion 
+            expanded={expanded.includes('etiquetas')}
+            onChange={() => handleAccordionChange('etiquetas')}
+            elevation={0}
+            sx={{ 
+              '&:before': { display: 'none' },
+              borderBottom: '1px solid #e5e7eb'
+            }}
+          >
+            <AccordionSummary 
+              expandIcon={<ExpandMoreIcon />}
+              sx={{ 
+                px: 2,
+                '& .MuiAccordionSummary-content': {
+                  alignItems: 'center',
+                  gap: 1
+                }
               }}
             >
-              Ver más detalle
-            </Button>
-          </Box>
-        )}
-
-        <Divider sx={{ my: 2 }} />
-
-        {/* Frontier Information - Enhanced */}
-        <Box>
-          <Box display="flex" alignItems="center" mb={2}>
-            <ModeOfTravelIcon color="info" sx={{ mr: 1 }} />
-            <Typography variant="h6" color="info.main">
-              🔌 Información de fronteras
-            </Typography>
-          </Box>
-
-          {isLoadingFrontiers ? (
-            <CircularProgress size={24} />
-          ) : enerbitFrontiersError ? (
-            <Alert severity="error">{enerbitFrontiersError}</Alert>
-          ) : enerbitFrontiers && enerbitFrontiers.length > 0 ? (
-            <Box>
-              {enerbitFrontiers.map((frontier) => {
-                const displayInfo = formatFrontierDisplayInfo(frontier);
-                const frontierColor = getFrontierTypeColor(
-                  frontier.frontier_type
-                );
-                const isRegistered = isFrontierRegisteredInXM(frontier);
-
-                return (
-                  <Box
-                    key={frontier.id}
+              <LocalOfferIcon sx={{ color: '#6b46c1', fontSize: 20 }} />
+              <Typography variant="body2" sx={{ fontWeight: 500, color: '#374151' }}>
+                Etiquetas del servicio
+              </Typography>
+            </AccordionSummary>
+            <AccordionDetails sx={{ px: 2, pt: 0, pb: 2 }}>
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                {serviceTags.length > 0 ? serviceTags.map((tag, index) => (
+                  <Chip
+                    key={tag.id || index}
+                    label={tag.name || tag.value || `Tag ${index + 1}`}
+                    size="small"
                     sx={{
-                      p: 2,
-                      mb: 2,
-                      borderRadius: 2,
-                      border: 1,
-                      borderColor: `${frontierColor}.main`,
-                      bgcolor: `${frontierColor}.light`,
-                      opacity: 0.9,
+                      backgroundColor: '#e0e7ff',
+                      color: '#3730a3',
+                      fontSize: '0.75rem',
+                      height: 24
                     }}
-                  >
-                    {/* Frontier Header */}
-                    <Box
-                      display="flex"
-                      alignItems="center"
-                      justifyContent="space-between"
-                      mb={1}
-                    >
-                      <Typography variant="subtitle2" fontWeight={600}>
-                        {displayInfo.displayName}
-                      </Typography>
-                      <Chip
-                        label={displayInfo.typeInfo}
-                        color={frontierColor}
-                        size="small"
-                        variant="outlined"
-                      />
-                    </Box>
+                  />
+                )) : (
+                  <Typography variant="caption" color="#6b7280">
+                    No hay etiquetas disponibles
+                  </Typography>
+                )}
+              </Box>
+            </AccordionDetails>
+          </Accordion>
 
-                    {/* Frontier Details */}
-                    <List dense sx={{ py: 0 }}>
+          {/* Información del usuario */}
+          <Accordion 
+            expanded={expanded.includes('usuario')}
+            onChange={() => handleAccordionChange('usuario')}
+            elevation={0}
+            sx={{ 
+              '&:before': { display: 'none' },
+              borderBottom: '1px solid #e5e7eb'
+            }}
+          >
+            <AccordionSummary 
+              expandIcon={<ExpandMoreIcon />}
+              sx={{ 
+                px: 2,
+                '& .MuiAccordionSummary-content': {
+                  alignItems: 'center',
+                  gap: 1
+                }
+              }}
+            >
+              <PersonIcon sx={{ color: '#6b46c1', fontSize: 20 }} />
+              <Typography variant="body2" sx={{ fontWeight: 500, color: '#374151' }}>
+                Información del usuario
+              </Typography>
+            </AccordionSummary>
+            <AccordionDetails sx={{ px: 2, pt: 0, pb: 2 }}>
+              <List dense sx={{ py: 0 }}>
+                <ListItem sx={{ px: 0, py: 0.5 }}>
+                  <ListItemText 
+                    primary="ID del usuario:" 
+                    secondary={userInternalId}
+                    primaryTypographyProps={{ 
+                      variant: 'caption', 
+                      color: '#6b7280',
+                      fontWeight: 500
+                    }}
+                    secondaryTypographyProps={{ 
+                      variant: 'caption', 
+                      color: '#1f2937',
+                      sx: { wordBreak: 'break-all' }
+                    }}
+                  />
+                </ListItem>
+                <ListItem sx={{ px: 0, py: 0.5 }}>
+                  <ListItemText 
+                    primary="Identificación:" 
+                    secondary={userLegalId}
+                    primaryTypographyProps={{ 
+                      variant: 'caption', 
+                      color: '#6b7280',
+                      fontWeight: 500
+                    }}
+                    secondaryTypographyProps={{ 
+                      variant: 'caption', 
+                      color: '#1f2937'
+                    }}
+                  />
+                </ListItem>
+                <ListItem sx={{ px: 0, py: 0.5 }}>
+                  <ListItemText 
+                    primary="Email:" 
+                    secondary={userEmail}
+                    primaryTypographyProps={{ 
+                      variant: 'caption', 
+                      color: '#6b7280',
+                      fontWeight: 500
+                    }}
+                    secondaryTypographyProps={{ 
+                      variant: 'caption', 
+                      color: '#1f2937'
+                    }}
+                  />
+                </ListItem>
+                <ListItem sx={{ px: 0, py: 0.5 }}>
+                  <ListItemText 
+                    primary="Número contacto:" 
+                    secondary={userPhone}
+                    primaryTypographyProps={{ 
+                      variant: 'caption', 
+                      color: '#6b7280',
+                      fontWeight: 500
+                    }}
+                    secondaryTypographyProps={{ 
+                      variant: 'caption', 
+                      color: '#1f2937'
+                    }}
+                  />
+                </ListItem>
+              </List>
+              <Button
+                variant="text"
+                size="small"
+                endIcon={<KeyboardArrowDownIcon />}
+                sx={{
+                  color: '#6b46c1',
+                  fontSize: '0.75rem',
+                  textTransform: 'none',
+                  fontWeight: 500,
+                  mt: 1,
+                  p: 0,
+                  justifyContent: 'flex-start'
+                }}
+              >
+                Ver más detalle
+              </Button>
+            </AccordionDetails>
+          </Accordion>
+
+          {/* Estado del servicio */}
+          <Accordion 
+            expanded={expanded.includes('estado')}
+            onChange={() => handleAccordionChange('estado')}
+            elevation={0}
+            sx={{ 
+              '&:before': { display: 'none' },
+              borderBottom: '1px solid #e5e7eb'
+            }}
+          >
+            <AccordionSummary 
+              expandIcon={<ExpandMoreIcon />}
+              sx={{ 
+                px: 2,
+                '& .MuiAccordionSummary-content': {
+                  alignItems: 'center',
+                  gap: 1
+                }
+              }}
+            >
+              <SettingsIcon sx={{ color: '#6b46c1', fontSize: 20 }} />
+              <Typography variant="body2" sx={{ fontWeight: 500, color: '#374151' }}>
+                Estado del servicio
+              </Typography>
+            </AccordionSummary>
+            <AccordionDetails sx={{ px: 2, pt: 0, pb: 2 }}>
+              {isLoadingServiceStatus ? (
+                <CircularProgress size={24} />
+              ) : serviceStatus ? (
+                <List dense sx={{ py: 0 }}>
+                  <ListItem sx={{ px: 0, py: 0.5 }}>
+                    <ListItemText 
+                      primary="Estado del relay:" 
+                      secondary={serviceStatus.relay_status || "No disponible"}
+                      primaryTypographyProps={{ 
+                        variant: 'caption', 
+                        color: '#6b7280',
+                        fontWeight: 500
+                      }}
+                      secondaryTypographyProps={{ 
+                        variant: 'caption', 
+                        color: serviceStatus.relay_status === 'ON' ? '#059669' : '#dc2626'
+                      }}
+                    />
+                  </ListItem>
+                  <ListItem sx={{ px: 0, py: 0.5 }}>
+                    <ListItemText 
+                      primary="Última comunicación:" 
+                      secondary={serviceStatus.last_communication ? new Date(serviceStatus.last_communication).toLocaleString() : "No disponible"}
+                      primaryTypographyProps={{ 
+                        variant: 'caption', 
+                        color: '#6b7280',
+                        fontWeight: 500
+                      }}
+                      secondaryTypographyProps={{ 
+                        variant: 'caption', 
+                        color: '#1f2937'
+                      }}
+                    />
+                  </ListItem>
+                  <ListItem sx={{ px: 0, py: 0.5 }}>
+                    <ListItemText 
+                      primary="Calidad de señal:" 
+                      secondary={serviceStatus.signal_quality ? `${serviceStatus.signal_quality}%` : "No disponible"}
+                      primaryTypographyProps={{ 
+                        variant: 'caption', 
+                        color: '#6b7280',
+                        fontWeight: 500
+                      }}
+                      secondaryTypographyProps={{ 
+                        variant: 'caption', 
+                        color: '#1f2937'
+                      }}
+                    />
+                  </ListItem>
+                </List>
+              ) : (
+                <Alert 
+                  severity="warning" 
+                  icon={<WarningIcon fontSize="small" />}
+                  sx={{ 
+                    backgroundColor: '#fef3c7',
+                    color: '#92400e',
+                    border: '1px solid #fcd34d',
+                    '& .MuiAlert-icon': {
+                      color: '#f59e0b'
+                    }
+                  }}
+                >
+                  <Typography variant="caption">
+                    No se pudo obtener el estado del servicio
+                  </Typography>
+                </Alert>
+              )}
+            </AccordionDetails>
+          </Accordion>
+
+          {/* Información del servicio */}
+          <Accordion 
+            expanded={expanded.includes('servicio')}
+            onChange={() => handleAccordionChange('servicio')}
+            elevation={0}
+            sx={{ 
+              '&:before': { display: 'none' },
+              borderBottom: '1px solid #e5e7eb'
+            }}
+          >
+            <AccordionSummary 
+              expandIcon={<ExpandMoreIcon />}
+              sx={{ 
+                px: 2,
+                '& .MuiAccordionSummary-content': {
+                  alignItems: 'center',
+                  gap: 1
+                }
+              }}
+            >
+              <BuildIcon sx={{ color: '#f97316', fontSize: 20 }} />
+              <Typography variant="body2" sx={{ fontWeight: 500, color: '#374151' }}>
+                Información del servicio
+              </Typography>
+              <IconButton size="small" sx={{ color: '#6b7280', ml: 'auto', mr: 1 }}>
+                <EditIcon sx={{ fontSize: 16 }} />
+              </IconButton>
+            </AccordionSummary>
+            <AccordionDetails sx={{ px: 2, pt: 0, pb: 2 }}>
+              <List dense sx={{ py: 0 }}>
+                <ListItem sx={{ px: 0, py: 0.5 }}>
+                  <ListItemText 
+                    primary="ID del servicio:" 
+                    secondary={service.id || "912zf0f-68983-14ae-3e84-56b45c8c5a7"}
+                    primaryTypographyProps={{ 
+                      variant: 'caption', 
+                      color: '#6b7280',
+                      fontWeight: 500
+                    }}
+                    secondaryTypographyProps={{ 
+                      variant: 'caption', 
+                      color: '#1f2937',
+                      sx: { wordBreak: 'break-all' }
+                    }}
+                  />
+                </ListItem>
+                <ListItem sx={{ px: 0, py: 0.5 }}>
+                  <ListItemText 
+                    primary="NIU:" 
+                    secondary={service.creg_subscriber?.niu || "22z116656-002"}
+                    primaryTypographyProps={{ 
+                      variant: 'caption', 
+                      color: '#6b7280',
+                      fontWeight: 500
+                    }}
+                    secondaryTypographyProps={{ 
+                      variant: 'caption', 
+                      color: '#1f2937'
+                    }}
+                  />
+                </ListItem>
+                <ListItem sx={{ px: 0, py: 0.5 }}>
+                  <ListItemText 
+                    primary="ID punto de medida:" 
+                    secondary={service.measurement_point_id || "d96c5dc6-3c64-4506-b505a7d5c84a7"}
+                    primaryTypographyProps={{ 
+                      variant: 'caption', 
+                      color: '#6b7280',
+                      fontWeight: 500
+                    }}
+                    secondaryTypographyProps={{ 
+                      variant: 'caption', 
+                      color: '#1f2937',
+                      sx: { wordBreak: 'break-all' }
+                    }}
+                  />
+                </ListItem>
+                <ListItem sx={{ px: 0, py: 0.5 }}>
+                  <ListItemText 
+                    primary="Estado de contribución:" 
+                    secondary="No"
+                    primaryTypographyProps={{ 
+                      variant: 'caption', 
+                      color: '#6b7280',
+                      fontWeight: 500
+                    }}
+                    secondaryTypographyProps={{ 
+                      variant: 'caption', 
+                      color: '#1f2937'
+                    }}
+                  />
+                </ListItem>
+                <ListItem sx={{ px: 0, py: 0.5 }}>
+                  <ListItemText 
+                    primary="Serial del medidor:" 
+                    secondary={service.meter?.serial || "22z115665-0"}
+                    primaryTypographyProps={{ 
+                      variant: 'caption', 
+                      color: '#6b7280',
+                      fontWeight: 500
+                    }}
+                    secondaryTypographyProps={{ 
+                      variant: 'caption', 
+                      color: '#1f2937'
+                    }}
+                  />
+                </ListItem>
+                <ListItem sx={{ px: 0, py: 0.5 }}>
+                  <ListItemText 
+                    primary="NIU / C:" 
+                    secondary="10077034-2cc4-4bc5-9f74-4de00e90c500"
+                    primaryTypographyProps={{ 
+                      variant: 'caption', 
+                      color: '#6b7280',
+                      fontWeight: 500
+                    }}
+                    secondaryTypographyProps={{ 
+                      variant: 'caption', 
+                      color: '#1f2937',
+                      sx: { wordBreak: 'break-all' }
+                    }}
+                  />
+                </ListItem>
+              </List>
+              
+              {/* Additional service information from backend */}
+              {service.started_at && (
+                <Box sx={{ mt: 2 }}>
+                  <Typography variant="caption" color="#6b7280" sx={{ display: 'block', mb: 1 }}>
+                    📅 Fecha inicio servicio:
+                  </Typography>
+                  <Typography variant="caption" color="#1f2937" sx={{ display: 'block', mb: 1 }}>
+                    {new Date(service.started_at).toLocaleDateString()}
+                  </Typography>
+                </Box>
+              )}
+              
+              {service.service_agreement?.contribution_flag !== undefined && (
+                <Box sx={{ mt: 1 }}>
+                  <Typography variant="caption" color="#6b7280" sx={{ display: 'block', mb: 1 }}>
+                    🏭 Estado de contribución:
+                  </Typography>
+                  <Typography variant="caption" color="#1f2937" sx={{ display: 'block', mb: 1 }}>
+                    {service.service_agreement.contribution_flag ? 'Sí' : 'No'}
+                  </Typography>
+                </Box>
+              )}
+              
+              {service.creg_subscriber?.asset_ownership?.sui_code && (
+                <Box sx={{ mt: 1 }}>
+                  <Typography variant="caption" color="#6b7280" sx={{ display: 'block', mb: 1 }}>
+                    ⚡ Propietario del activo:
+                  </Typography>
+                  <Typography variant="caption" color="#1f2937" sx={{ display: 'block', mb: 1 }}>
+                    {service.creg_subscriber.asset_ownership.sui_code}
+                  </Typography>
+                </Box>
+              )}
+            </AccordionDetails>
+          </Accordion>
+
+          {/* Información del predio */}
+          <Accordion 
+            expanded={expanded.includes('predio')}
+            onChange={() => handleAccordionChange('predio')}
+            elevation={0}
+            sx={{ 
+              '&:before': { display: 'none' },
+              borderBottom: '1px solid #e5e7eb'
+            }}
+          >
+            <AccordionSummary 
+              expandIcon={<ExpandMoreIcon />}
+              sx={{ 
+                px: 2,
+                '& .MuiAccordionSummary-content': {
+                  alignItems: 'center',
+                  gap: 1
+                }
+              }}
+            >
+              <HomeIcon sx={{ color: '#f97316', fontSize: 20 }} />
+              <Typography variant="body2" sx={{ fontWeight: 500, color: '#374151' }}>
+                Información del predio
+              </Typography>
+              <IconButton size="small" sx={{ color: '#6b7280', ml: 'auto', mr: 1 }}>
+                <EditIcon sx={{ fontSize: 16 }} />
+              </IconButton>
+            </AccordionSummary>
+            <AccordionDetails sx={{ px: 2, pt: 0, pb: 2 }}>
+              <List dense sx={{ py: 0 }}>
+                <ListItem sx={{ px: 0, py: 0.5 }}>
+                  <ListItemText 
+                    primary="Dirección:" 
+                    secondary={service.estate?.address || "CRA 74 A 82 15 APTO 704 PUENTE LARGO"}
+                    primaryTypographyProps={{ 
+                      variant: 'caption', 
+                      color: '#6b7280',
+                      fontWeight: 500
+                    }}
+                    secondaryTypographyProps={{ 
+                      variant: 'caption', 
+                      color: '#1f2937'
+                    }}
+                  />
+                </ListItem>
+                <ListItem sx={{ px: 0, py: 0.5 }}>
+                  <ListItemText 
+                    primary="Departamento:" 
+                    secondary={service.estate?.state || "Antioquia"}
+                    primaryTypographyProps={{ 
+                      variant: 'caption', 
+                      color: '#6b7280',
+                      fontWeight: 500
+                    }}
+                    secondaryTypographyProps={{ 
+                      variant: 'caption', 
+                      color: '#1f2937'
+                    }}
+                  />
+                </ListItem>
+                <ListItem sx={{ px: 0, py: 0.5 }}>
+                  <ListItemText 
+                    primary="Ciudad:" 
+                    secondary={service.estate?.city || "Medellín"}
+                    primaryTypographyProps={{ 
+                      variant: 'caption', 
+                      color: '#6b7280',
+                      fontWeight: 500
+                    }}
+                    secondaryTypographyProps={{ 
+                      variant: 'caption', 
+                      color: '#1f2937'
+                    }}
+                  />
+                </ListItem>
+                <ListItem sx={{ px: 0, py: 0.5 }}>
+                  <ListItemText 
+                    primary="Estrato:" 
+                    secondary={service.creg_subscriber?.sui_social_stratum?.sui_code || "4"}
+                    primaryTypographyProps={{ 
+                      variant: 'caption', 
+                      color: '#6b7280',
+                      fontWeight: 500
+                    }}
+                    secondaryTypographyProps={{ 
+                      variant: 'caption', 
+                      color: '#1f2937'
+                    }}
+                  />
+                </ListItem>
+              </List>
+              <Button
+                variant="text"
+                size="small"
+                endIcon={<KeyboardArrowDownIcon />}
+                sx={{
+                  color: '#6b46c1',
+                  fontSize: '0.75rem',
+                  textTransform: 'none',
+                  fontWeight: 500,
+                  mt: 1,
+                  p: 0,
+                  justifyContent: 'flex-start'
+                }}
+              >
+                Ver más detalle
+              </Button>
+            </AccordionDetails>
+          </Accordion>
+
+          {/* Información del plan */}
+          <Accordion 
+            expanded={expanded.includes('plan')}
+            onChange={() => handleAccordionChange('plan')}
+            elevation={0}
+            sx={{ 
+              '&:before': { display: 'none' },
+              borderBottom: '1px solid #e5e7eb'
+            }}
+          >
+            <AccordionSummary 
+              expandIcon={<ExpandMoreIcon />}
+              sx={{ 
+                px: 2,
+                '& .MuiAccordionSummary-content': {
+                  alignItems: 'center',
+                  gap: 1
+                }
+              }}
+            >
+              <DescriptionIcon sx={{ color: '#f59e0b', fontSize: 20 }} />
+              <Typography variant="body2" sx={{ fontWeight: 500, color: '#374151' }}>
+                Información del plan
+              </Typography>
+            </AccordionSummary>
+            <AccordionDetails sx={{ px: 2, pt: 0, pb: 2 }}>
+              <List dense sx={{ py: 0 }}>
+                <ListItem sx={{ px: 0, py: 0.5 }}>
+                  <ListItemText 
+                    primary="Plan actual:" 
+                    secondary={planInfo.current}
+                    primaryTypographyProps={{ 
+                      variant: 'caption', 
+                      color: '#6b7280',
+                      fontWeight: 500
+                    }}
+                    secondaryTypographyProps={{ 
+                      variant: 'caption', 
+                      color: '#1f2937'
+                    }}
+                  />
+                </ListItem>
+                <ListItem sx={{ px: 0, py: 0.5 }}>
+                  <ListItemText 
+                    primary="Cobertura:" 
+                    secondary={planInfo.coverage}
+                    primaryTypographyProps={{ 
+                      variant: 'caption', 
+                      color: '#6b7280',
+                      fontWeight: 500
+                    }}
+                    secondaryTypographyProps={{ 
+                      variant: 'caption', 
+                      color: '#1f2937'
+                    }}
+                  />
+                </ListItem>
+                <ListItem sx={{ px: 0, py: 0.5 }}>
+                  <ListItemText 
+                    primary="Estado:" 
+                    secondary={planInfo.status}
+                    primaryTypographyProps={{ 
+                      variant: 'caption', 
+                      color: '#6b7280',
+                      fontWeight: 500
+                    }}
+                    secondaryTypographyProps={{ 
+                      variant: 'caption', 
+                      color: '#1f2937'
+                    }}
+                  />
+                </ListItem>
+                <ListItem sx={{ px: 0, py: 0.5 }}>
+                  <ListItemText 
+                    primary="Fecha inicio:" 
+                    secondary={planInfo.startDate}
+                    primaryTypographyProps={{ 
+                      variant: 'caption', 
+                      color: '#6b7280',
+                      fontWeight: 500
+                    }}
+                    secondaryTypographyProps={{ 
+                      variant: 'caption', 
+                      color: '#1f2937'
+                    }}
+                  />
+                </ListItem>
+                <ListItem sx={{ px: 0, py: 0.5 }}>
+                  <ListItemText 
+                    primary="Fecha fin:" 
+                    secondary={planInfo.endDate}
+                    primaryTypographyProps={{ 
+                      variant: 'caption', 
+                      color: '#6b7280',
+                      fontWeight: 500
+                    }}
+                    secondaryTypographyProps={{ 
+                      variant: 'caption', 
+                      color: '#1f2937'
+                    }}
+                  />
+                </ListItem>
+              </List>
+              <Button
+                variant="text"
+                size="small"
+                endIcon={<KeyboardArrowDownIcon />}
+                sx={{
+                  color: '#6b46c1',
+                  fontSize: '0.75rem',
+                  textTransform: 'none',
+                  fontWeight: 500,
+                  mt: 1,
+                  p: 0,
+                  justifyContent: 'flex-start'
+                }}
+              >
+                Ver más detalle
+              </Button>
+              <Button
+                variant="text"
+                size="small"
+                sx={{
+                  color: '#f59e0b',
+                  fontSize: '0.75rem',
+                  textTransform: 'none',
+                  fontWeight: 500,
+                  mt: 0.5,
+                  p: 0,
+                  justifyContent: 'flex-start',
+                  display: 'block'
+                }}
+              >
+                Cambiar plan de servicio a8
+              </Button>
+            </AccordionDetails>
+          </Accordion>
+
+          {/* Información de la frontera */}
+          <Accordion 
+            expanded={expanded.includes('frontera')}
+            onChange={() => handleAccordionChange('frontera')}
+            elevation={0}
+            sx={{ 
+              '&:before': { display: 'none' }
+            }}
+          >
+            <AccordionSummary 
+              expandIcon={<ExpandMoreIcon />}
+              sx={{ 
+                px: 2,
+                '& .MuiAccordionSummary-content': {
+                  alignItems: 'center',
+                  gap: 1
+                }
+              }}
+            >
+              <AccountTreeIcon sx={{ color: '#8b5cf6', fontSize: 20 }} />
+              <Typography variant="body2" sx={{ fontWeight: 500, color: '#374151' }}>
+                Información de la frontera
+              </Typography>
+              <IconButton size="small" sx={{ color: '#6b7280', ml: 'auto', mr: 1 }}>
+                <EditIcon sx={{ fontSize: 16 }} />
+              </IconButton>
+            </AccordionSummary>
+            <AccordionDetails sx={{ px: 2, pt: 0, pb: 2 }}>
+              {isLoadingFrontiers ? (
+                <CircularProgress size={24} />
+              ) : enerbitFrontiersError ? (
+                <Typography variant="caption" color="error">
+                  Error cargando fronteras: {enerbitFrontiersError}
+                </Typography>
+              ) : enerbitFrontiers && enerbitFrontiers.length > 0 ? (
+                <>
+                  {enerbitFrontiers.map((frontier, index) => (
+                    <List dense sx={{ py: 0 }} key={frontier.id || index}>
                       <ListItem sx={{ px: 0, py: 0.5 }}>
-                        <ListItemIcon sx={{ minWidth: 32 }}>
-                          <ModeOfTravelIcon sx={{ fontSize: 16 }} />
-                        </ListItemIcon>
-                        <ListItemText
-                          primary={displayInfo.statusInfo}
-                          primaryTypographyProps={{ variant: "caption" }}
+                        <ListItemText 
+                          primary="Código XM:" 
+                          secondary={frontier.frontier_xm_code || "No disponible"}
+                          primaryTypographyProps={{ 
+                            variant: 'caption', 
+                            color: '#6b7280',
+                            fontWeight: 500
+                          }}
+                          secondaryTypographyProps={{ 
+                            variant: 'caption', 
+                            color: '#1f2937'
+                          }}
                         />
                       </ListItem>
-
                       <ListItem sx={{ px: 0, py: 0.5 }}>
-                        <ListItemIcon sx={{ minWidth: 32 }}>
-                          <AccountTreeIcon sx={{ fontSize: 16 }} />
-                        </ListItemIcon>
-                        <ListItemText
-                          primary={displayInfo.xmInfo}
-                          primaryTypographyProps={{ variant: "caption" }}
+                        <ListItemText 
+                          primary="Tipo de frontera:" 
+                          secondary={frontier.frontier_type === 'IMPORT_FRONTIER' ? 'Importadora' : frontier.frontier_type === 'EXPORT_FRONTIER' ? 'Exportadora' : frontier.frontier_type || 'No especificado'}
+                          primaryTypographyProps={{ 
+                            variant: 'caption', 
+                            color: '#6b7280',
+                            fontWeight: 500
+                          }}
+                          secondaryTypographyProps={{ 
+                            variant: 'caption', 
+                            color: '#1f2937'
+                          }}
                         />
                       </ListItem>
-
-                      {isRegistered && displayInfo.registrationInfo && (
-                        <ListItem sx={{ px: 0, py: 0.5 }}>
-                          <ListItemIcon sx={{ minWidth: 32 }}>
-                            <CalendarTodayIcon sx={{ fontSize: 16 }} />
-                          </ListItemIcon>
-                          <ListItemText
-                            primary={`Registrada XM: ${displayInfo.registrationInfo}`}
-                            primaryTypographyProps={{ variant: "caption" }}
-                          />
-                        </ListItem>
-                      )}
-
-                      {!isRegistered && (
-                        <ListItem sx={{ px: 0, py: 0.5 }}>
-                          <ListItemIcon sx={{ minWidth: 32 }}>
-                            <CalendarTodayIcon
-                              sx={{ fontSize: 16 }}
-                              color="warning"
-                            />
-                          </ListItemIcon>
-                          <ListItemText
-                            primary="Pendiente registro XM"
-                            primaryTypographyProps={{
-                              variant: "caption",
-                              color: "warning.main",
-                            }}
-                          />
-                        </ListItem>
+                      <ListItem sx={{ px: 0, py: 0.5 }}>
+                        <ListItemText 
+                          primary="Fecha de registro ante XM:" 
+                          secondary={frontier.frontier_xm_registered_from ? new Date(frontier.frontier_xm_registered_from).toLocaleDateString() : "No disponible"}
+                          primaryTypographyProps={{ 
+                            variant: 'caption', 
+                            color: '#6b7280',
+                            fontWeight: 500
+                          }}
+                          secondaryTypographyProps={{ 
+                            variant: 'caption', 
+                            color: '#1f2937'
+                          }}
+                        />
+                      </ListItem>
+                      <ListItem sx={{ px: 0, py: 0.5 }}>
+                        <ListItemText 
+                          primary="ID Lead:" 
+                          secondary={frontier.lead_id || "No disponible"}
+                          primaryTypographyProps={{ 
+                            variant: 'caption', 
+                            color: '#6b7280',
+                            fontWeight: 500
+                          }}
+                          secondaryTypographyProps={{ 
+                            variant: 'caption', 
+                            color: '#1f2937'
+                          }}
+                        />
+                      </ListItem>
+                      {index < enerbitFrontiers.length - 1 && (
+                        <Divider sx={{ my: 1 }} />
                       )}
                     </List>
-                  </Box>
-                );
-              })}
-            </Box>
-          ) : (
-            <Typography variant="body2" color="text.secondary">
-              No hay información de fronteras disponible
-            </Typography>
-          )}
+                  ))}
+                </>
+              ) : (
+                <Typography variant="caption" color="#6b7280">
+                  No hay información de fronteras disponible
+                </Typography>
+              )}
+            </AccordionDetails>
+          </Accordion>
         </Box>
       </CardContent>
     </Card>

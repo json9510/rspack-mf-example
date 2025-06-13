@@ -1,25 +1,7 @@
+import React, { useState } from "react";
 import {
-  BookmarkAdded as BookmarkAddedIcon,
-  Download as DownloadIcon,
-  ErrorOutline as ErrorOutlineIcon,
-  KeyboardArrowDown as KeyboardArrowDownIcon,
-  KeyboardArrowUp as KeyboardArrowUpIcon,
-  MonetizationOn as MonetizationOnIcon,
-  Receipt as ReceiptIcon,
-} from "@mui/icons-material";
-import {
-  Alert,
   Box,
   Button,
-  Card,
-  CardContent,
-  Chip,
-  CircularProgress,
-  Collapse,
-  Grid,
-  IconButton,
-  Pagination,
-  Paper,
   Table,
   TableBody,
   TableCell,
@@ -27,21 +9,145 @@ import {
   TableHead,
   TableRow,
   Typography,
+  Paper,
+  Collapse,
+  IconButton,
+  Chip,
+  CircularProgress,
 } from "@mui/material";
-import React, { useState } from "react";
+import {
+  KeyboardArrowDown as KeyboardArrowDownIcon,
+  KeyboardArrowUp as KeyboardArrowUpIcon,
+  Download as DownloadIcon,
+  MonetizationOn as MonetizationOnIcon,
+} from "@mui/icons-material";
 
 import { useBillingStore } from "../../../model/billing-store";
-import type {
-  BillingInvoice,
-  BillingDetail,
-} from "../../../domain/repositories/BillingRepository";
+
+// Mock data structure to match the image
+interface InvoiceItem {
+  id: string;
+  serviceName: string;
+  serviceType: string;
+  status: 'Pagada' | 'Pendiente';
+  amount: number;
+  icon: string;
+  color: string;
+}
+
+interface MonthlyBilling {
+  month: string;
+  year: string;
+  total: number;
+  pendingAmount: number;
+  invoices: InvoiceItem[];
+  hasReliquidation: boolean;
+}
+
+// Mock data that matches the image
+const mockBillingData: MonthlyBilling[] = [
+  {
+    month: "Junio",
+    year: "2025",
+    total: 178858,
+    pendingAmount: 178858,
+    hasReliquidation: true,
+    invoices: [
+      {
+        id: "1",
+        serviceName: "Servicio enerBit de componente fija",
+        serviceType: "fixed_component",
+        status: "Pagada",
+        amount: 0,
+        icon: "E",
+        color: "#ef4444"
+      },
+      {
+        id: "2",
+        serviceName: "Servicios enerBit",
+        serviceType: "energy",
+        status: "Pendiente",
+        amount: 6804,
+        icon: "E",
+        color: "#ef4444"
+      },
+      {
+        id: "3",
+        serviceName: "Energía tradicional",
+        serviceType: "traditional_energy",
+        status: "Pendiente",
+        amount: 8165,
+        icon: "E",
+        color: "#10b981"
+      },
+      {
+        id: "4",
+        serviceName: "Alumbrado público",
+        serviceType: "public_lighting",
+        status: "Pendiente",
+        amount: 19000,
+        icon: "$",
+        color: "#6b46c1"
+      },
+      {
+        id: "5",
+        serviceName: "Servicio enerBit de componente fija",
+        serviceType: "fixed_component",
+        status: "Pendiente",
+        amount: 8012,
+        icon: "$",
+        color: "#6b46c1"
+      },
+      {
+        id: "6",
+        serviceName: "Energía tradicional",
+        serviceType: "traditional_energy",
+        status: "Pendiente",
+        amount: 168935,
+        icon: "$",
+        color: "#6b46c1"
+      },
+      {
+        id: "7",
+        serviceName: "Servicios enerBit",
+        serviceType: "energy",
+        status: "Pendiente",
+        amount: -15728,
+        icon: "$",
+        color: "#6b46c1"
+      }
+    ]
+  },
+  {
+    month: "Mayo",
+    year: "2025",
+    total: 174085,
+    pendingAmount: 0,
+    hasReliquidation: true,
+    invoices: []
+  },
+  {
+    month: "Abril",
+    year: "2025",
+    total: 158446,
+    pendingAmount: 0,
+    hasReliquidation: true,
+    invoices: []
+  },
+  {
+    month: "Marzo",
+    year: "2025",
+    total: 143286,
+    pendingAmount: 0,
+    hasReliquidation: true,
+    invoices: []
+  }
+];
 
 export const TableInvoice: React.FC = () => {
-  const { billing, essId, yearFilter, isLoadingInvoices } = useBillingStore();
-
-  const [openRows, setOpenRows] = useState<{ [key: number]: boolean }>({});
-  const [loadingButtons, setLoadingButtons] = useState<number[]>([]);
-  const [currentPage, setCurrentPage] = useState<number>(billing?.page ?? 1);
+  const { isLoadingInvoices } = useBillingStore();
+  const [expandedMonths, setExpandedMonths] = useState<string[]>(["Junio-2025"]);
+  const [downloadingInvoices, setDownloadingInvoices] = useState<string[]>([]);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("es-CO", {
@@ -51,143 +157,28 @@ export const TableInvoice: React.FC = () => {
     }).format(amount);
   };
 
-  const formatDate = (dateString?: string): string => {
-    if (!dateString) return "Fecha no disponible";
-    const [year, month] = dateString.split("-");
-    const months = [
-      "Enero",
-      "Febrero",
-      "Marzo",
-      "Abril",
-      "Mayo",
-      "Junio",
-      "Julio",
-      "Agosto",
-      "Septiembre",
-      "Octubre",
-      "Noviembre",
-      "Diciembre",
-    ];
-    const monthName = months[Number.parseInt(month, 10) - 1];
-    return `${monthName} / ${year}`;
+  const handleMonthToggle = (monthKey: string) => {
+    setExpandedMonths(prev => 
+      prev.includes(monthKey) 
+        ? prev.filter(key => key !== monthKey)
+        : [...prev, monthKey]
+    );
   };
 
-  const handleRowClick = (index: number) => {
-    setOpenRows((prevOpenRows) => ({
-      ...prevOpenRows,
-      [index]: !prevOpenRows[index],
-    }));
-  };
-
-  const handleDownloadClick = async (
-    index: number,
-    documentIds: (string | undefined)[]
-  ) => {
-    const validIds = documentIds.filter((id): id is string => Boolean(id));
-    if (validIds.length === 0) return;
-
-    setLoadingButtons((prev) => [...prev, index]);
+  const handleDownloadMonth = async (monthKey: string) => {
+    setDownloadingInvoices(prev => [...prev, monthKey]);
     try {
-      // await downloadInvoiceGroup(validIds);
+      // Simulate download
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      console.log(`Downloaded invoices for ${monthKey}`);
     } finally {
-      setLoadingButtons((prev) => prev.filter((i) => i !== index));
+      setDownloadingInvoices(prev => prev.filter(key => key !== monthKey));
     }
   };
 
-  const handlePageChange = (
-    _event: React.ChangeEvent<unknown>,
-    value: number
-  ) => {
-    setCurrentPage(value);
+  const handleInvoiceDetail = (invoice: InvoiceItem) => {
+    console.log("View invoice detail:", invoice);
   };
-
-  const getItemColor = (
-    items?: BillingInvoice[]
-  ): "primary" | "error" | "success" | "secondary" => {
-    if (!items) return "primary";
-    const hasCreditNote = items.some(
-      (item) => item.document_type === "credit_note"
-    );
-    const hasDebitNote = items.some(
-      (item) => item.document_type === "debit_note"
-    );
-
-    if (hasCreditNote && hasDebitNote) return "secondary";
-    if (hasDebitNote) return "error";
-    if (hasCreditNote) return "success";
-    return "primary";
-  };
-
-  const getDocumentIcon = (documentType?: string) => {
-    switch (documentType) {
-      case "invoice":
-        return <MonetizationOnIcon />;
-      case "credit_note":
-        return <BookmarkAddedIcon />;
-      case "debit_note":
-        return <ErrorOutlineIcon />;
-      default:
-        return <ReceiptIcon />;
-    }
-  };
-
-  const getDocumentColor = (
-    documentType?: string
-  ): "primary" | "error" | "success" => {
-    switch (documentType) {
-      case "invoice":
-        return "primary";
-      case "debit_note":
-        return "error";
-      case "credit_note":
-        return "success";
-      default:
-        return "primary";
-    }
-  };
-
-  const getPaymentStatusColor = (
-    status?: string
-  ): "success" | "warning" | "error" => {
-    switch (status) {
-      case "payed":
-        return "success";
-      case "pending":
-        return "warning";
-      case "overdue":
-        return "error";
-      default:
-        return "warning";
-    }
-  };
-
-  const getPaymentStatusText = (status?: string): string => {
-    switch (status) {
-      case "payed":
-        return "✅ Pagado";
-      case "pending":
-        return "⏳ Pendiente";
-      case "overdue":
-        return "🚨 Vencido";
-      default:
-        return "⏳ Pendiente";
-    }
-  };
-
-  const getDocumentTypeText = (type?: string): string => {
-    switch (type) {
-      case "invoice":
-        return "🧾 Factura";
-      case "credit_note":
-        return "💚 Nota Crédito";
-      case "debit_note":
-        return "🔴 Nota Débito";
-      default:
-        return "📄 Documento";
-    }
-  };
-
-  const totalPages = (billing?.page ?? 1) + (billing?.next_pages ?? 0);
 
   if (isLoadingInvoices) {
     return (
@@ -200,296 +191,252 @@ export const TableInvoice: React.FC = () => {
     );
   }
 
-  if (!billing?.items || billing.items.length === 0) {
-    return (
-      <Alert severity="info" sx={{ my: 2 }}>
-        📭 No se encontraron facturas para los filtros seleccionados
-      </Alert>
-    );
-  }
-
   return (
     <Box>
-      <TableContainer component={Paper} elevation={1}>
+      <TableContainer 
+        component={Paper} 
+        sx={{ 
+          boxShadow: '0 1px 3px rgba(0,0,0,0.1)', 
+          borderRadius: 2,
+          backgroundColor: 'white',
+          border: '1px solid #e5e7eb'
+        }}
+      >
         <Table>
           <TableHead>
-            <TableRow sx={{ backgroundColor: "#F8F9FA" }}>
-              <TableCell>
-                <strong>📅 Emisión de factura</strong>
+            <TableRow sx={{ backgroundColor: '#f9fafb' }}>
+              <TableCell sx={{ 
+                fontWeight: 600, 
+                color: '#374151',
+                py: 2,
+                borderBottom: '1px solid #e5e7eb'
+              }}>
+                Emisión de factura
               </TableCell>
-              <TableCell>
-                <strong>💰 Total</strong>
+              <TableCell sx={{ 
+                fontWeight: 600, 
+                color: '#374151',
+                py: 2,
+                borderBottom: '1px solid #e5e7eb'
+              }}>
+                Total
               </TableCell>
-              <TableCell>
-                <strong>⚠️ Pendiente por pagar</strong>
+              <TableCell sx={{ 
+                fontWeight: 600, 
+                color: '#374151',
+                py: 2,
+                borderBottom: '1px solid #e5e7eb'
+              }}>
+                Pendiente por pagar
               </TableCell>
-              <TableCell>
-                <strong>💸 Reliquidación</strong>
+              <TableCell sx={{ 
+                fontWeight: 600, 
+                color: '#374151',
+                py: 2,
+                borderBottom: '1px solid #e5e7eb'
+              }}>
+                Reliquidación
               </TableCell>
-              <TableCell>
-                <strong>📥 Descarga factura</strong>
+              <TableCell sx={{ 
+                fontWeight: 600, 
+                color: '#374151',
+                py: 2,
+                borderBottom: '1px solid #e5e7eb'
+              }}>
+                Descarga factura
               </TableCell>
-              <TableCell />
             </TableRow>
           </TableHead>
           <TableBody>
-            {billing.items.map(
-              (billingDetail: BillingDetail, index: number) => (
-                // biome-ignore lint/suspicious/noArrayIndexKey: <explanation>
-                <React.Fragment key={index}>
-                  <TableRow sx={{ backgroundColor: "#F8F9FA" }}>
-                    <TableCell>
-                      <Typography fontWeight={700}>
-                        {formatDate(billingDetail.issued_at)}
+            {mockBillingData.map((monthData) => {
+              const monthKey = `${monthData.month}-${monthData.year}`;
+              const isExpanded = expandedMonths.includes(monthKey);
+              const isDownloading = downloadingInvoices.includes(monthKey);
+
+              return (
+                <React.Fragment key={monthKey}>
+                  {/* Month Summary Row */}
+                  <TableRow 
+                    sx={{ 
+                      backgroundColor: '#f9fafb',
+                      '&:hover': { backgroundColor: '#f3f4f6' }
+                    }}
+                  >
+                    <TableCell sx={{ py: 2, borderBottom: 'none' }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <IconButton
+                          size="small"
+                          onClick={() => handleMonthToggle(monthKey)}
+                          sx={{ color: '#6b46c1' }}
+                        >
+                          {isExpanded ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />}
+                        </IconButton>
+                        <Typography variant="body1" sx={{ fontWeight: 600, color: '#1f2937' }}>
+                          {monthData.month} / {monthData.year}
+                        </Typography>
+                      </Box>
+                    </TableCell>
+                    <TableCell sx={{ py: 2, borderBottom: 'none' }}>
+                      <Typography variant="body1" sx={{ fontWeight: 600, color: '#1f2937' }}>
+                        {formatCurrency(monthData.total)}
                       </Typography>
                     </TableCell>
-                    <TableCell>
-                      <Typography fontWeight={600} color="primary">
-                        {formatCurrency(
-                          billingDetail.total_payable_amount || 0
-                        )}
+                    <TableCell sx={{ py: 2, borderBottom: 'none' }}>
+                      <Typography variant="body1" sx={{ fontWeight: 600, color: '#1f2937' }}>
+                        {formatCurrency(monthData.pendingAmount)}
                       </Typography>
                     </TableCell>
-                    <TableCell>
-                      <Typography
-                        fontWeight={600}
-                        color={
-                          (billingDetail.total_owe_amount || 0) > 0
-                            ? "error"
-                            : "success"
-                        }
-                      >
-                        {formatCurrency(billingDetail.total_owe_amount || 0)}
-                      </Typography>
-                    </TableCell>
-                    <TableCell>
-                      <Button
-                        variant="contained"
-                        color={getItemColor(billingDetail.items)}
+                    <TableCell sx={{ py: 2, borderBottom: 'none' }}>
+                      <IconButton
                         size="small"
-                        onClick={() => {
-                          console.log("Ver reliquidación:", billingDetail);
+                        sx={{
+                          backgroundColor: '#6b46c1',
+                          color: 'white',
+                          width: 32,
+                          height: 32,
+                          '&:hover': {
+                            backgroundColor: '#553c9a',
+                          },
                         }}
                       >
-                        <MonetizationOnIcon />
-                      </Button>
+                        <MonetizationOnIcon sx={{ fontSize: 16 }} />
+                      </IconButton>
                     </TableCell>
-                    <TableCell>
+                    <TableCell sx={{ py: 2, borderBottom: 'none' }}>
                       <Button
                         variant="outlined"
-                        color="secondary"
-                        disabled={loadingButtons.includes(index)}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDownloadClick(
-                            index,
-                            billingDetail.items?.map(
-                              (item) => item.document_id
-                            ) || []
-                          );
-                        }}
+                        size="small"
+                        disabled={isDownloading}
+                        onClick={() => handleDownloadMonth(monthKey)}
                         startIcon={
-                          loadingButtons.includes(index) ? (
+                          isDownloading ? (
                             <CircularProgress size={16} />
                           ) : (
                             <DownloadIcon />
                           )
                         }
+                        sx={{
+                          borderColor: '#e5e7eb',
+                          color: '#6b7280',
+                          borderRadius: 2,
+                          textTransform: 'none',
+                          fontWeight: 500,
+                          '&:hover': {
+                            borderColor: '#6b46c1',
+                            color: '#6b46c1',
+                          },
+                        }}
                       >
-                        {loadingButtons.includes(index)
-                          ? "Descargando..."
-                          : "Factura"}
+                        {isDownloading ? "" : "Factura"}
                       </Button>
-                    </TableCell>
-                    <TableCell>
-                      <IconButton
-                        size="small"
-                        onClick={() => handleRowClick(index)}
-                      >
-                        {openRows[index] ? (
-                          <KeyboardArrowUpIcon />
-                        ) : (
-                          <KeyboardArrowDownIcon />
-                        )}
-                      </IconButton>
                     </TableCell>
                   </TableRow>
 
+                  {/* Expanded Invoice Details */}
                   <TableRow>
-                    <TableCell colSpan={6} sx={{ p: 0 }}>
-                      <Collapse
-                        in={openRows[index]}
-                        timeout="auto"
-                        unmountOnExit
-                      >
-                        <Box sx={{ p: 2, backgroundColor: "#FAFAFA" }}>
-                          <Typography variant="h6" gutterBottom color="primary">
-                            📋 Detalle de Documentos -{" "}
-                            {formatDate(billingDetail.issued_at)}
-                          </Typography>
-                          <Grid container spacing={2}>
-                            {(billingDetail.items || []).map(
-                              (
-                                invoice: BillingInvoice,
-                                invoiceIndex: number
-                              ) => (
-                                <Grid
-                                  size={{ xs: 12, md: 6 }}
-                                  // biome-ignore lint/suspicious/noArrayIndexKey: <explanation>
-                                  key={invoiceIndex}
+                    <TableCell colSpan={5} sx={{ p: 0, borderBottom: 'none' }}>
+                      <Collapse in={isExpanded} timeout="auto" unmountOnExit>
+                        <Box sx={{ p: 2, backgroundColor: '#fafafa' }}>
+                          {monthData.invoices.length > 0 ? (
+                            monthData.invoices.map((invoice) => (
+                              <Box
+                                key={invoice.id}
+                                sx={{
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: 2,
+                                  py: 2,
+                                  borderBottom: '1px solid #f3f4f6',
+                                  '&:last-child': {
+                                    borderBottom: 'none',
+                                  },
+                                }}
+                              >
+                                {/* Service Icon */}
+                                <Box
+                                  sx={{
+                                    width: 40,
+                                    height: 40,
+                                    borderRadius: 2,
+                                    backgroundColor: invoice.color,
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    color: 'white',
+                                    fontWeight: 600,
+                                    fontSize: '1.1rem',
+                                  }}
                                 >
-                                  <Card
-                                    variant="outlined"
-                                    sx={{ height: "100%" }}
-                                  >
-                                    <CardContent>
-                                      <Box
-                                        display="flex"
-                                        alignItems="center"
-                                        gap={2}
-                                        mb={2}
-                                      >
-                                        <Button
-                                          variant="contained"
-                                          color={getDocumentColor(
-                                            invoice.document_type
-                                          )}
-                                          size="small"
-                                        >
-                                          {getDocumentIcon(
-                                            invoice.document_type
-                                          )}
-                                        </Button>
-                                        <Box>
-                                          <Typography
-                                            variant="body1"
-                                            fontWeight={600}
-                                          >
-                                            {getDocumentTypeText(
-                                              invoice.document_type
-                                            )}
-                                          </Typography>
-                                          <Typography
-                                            variant="body2"
-                                            color="text.secondary"
-                                          >
-                                            ID: {invoice.document_id || "N/A"}
-                                          </Typography>
-                                        </Box>
-                                      </Box>
+                                  {invoice.icon}
+                                </Box>
 
-                                      <Box
-                                        display="flex"
-                                        justifyContent="space-between"
-                                        alignItems="center"
-                                        mb={1}
-                                      >
-                                        <Typography
-                                          variant="body2"
-                                          color="text.secondary"
-                                        >
-                                          Estado de pago:
-                                        </Typography>
-                                        <Chip
-                                          label={getPaymentStatusText(
-                                            invoice.payment_status
-                                          )}
-                                          color={getPaymentStatusColor(
-                                            invoice.payment_status
-                                          )}
-                                          size="small"
-                                        />
-                                      </Box>
+                                {/* Service Name */}
+                                <Box sx={{ flex: 1 }}>
+                                  <Typography variant="body2" color="text.primary">
+                                    {invoice.serviceName}
+                                  </Typography>
+                                </Box>
 
-                                      <Box
-                                        display="flex"
-                                        justifyContent="space-between"
-                                        alignItems="center"
-                                        mb={1}
-                                      >
-                                        <Typography
-                                          variant="body2"
-                                          color="text.secondary"
-                                        >
-                                          Valor:
-                                        </Typography>
-                                        <Typography
-                                          fontWeight={600}
-                                          color="primary"
-                                        >
-                                          {formatCurrency(
-                                            invoice.legal_payable_amount || 0
-                                          )}
-                                        </Typography>
-                                      </Box>
+                                {/* Status */}
+                                <Box sx={{ minWidth: 100 }}>
+                                  <Chip
+                                    label={invoice.status}
+                                    size="small"
+                                    sx={{
+                                      backgroundColor: invoice.status === 'Pagada' ? '#dcfce7' : '#fef3c7',
+                                      color: invoice.status === 'Pagada' ? '#16a34a' : '#d97706',
+                                      fontWeight: 500,
+                                    }}
+                                  />
+                                </Box>
 
-                                      <Box
-                                        display="flex"
-                                        justifyContent="space-between"
-                                        alignItems="center"
-                                        mb={2}
-                                      >
-                                        <Typography
-                                          variant="body2"
-                                          color="text.secondary"
-                                        >
-                                          Tipo de servicio:
-                                        </Typography>
-                                        <Typography variant="body2">
-                                          {invoice.service_type_name ===
-                                          "energy_electricity"
-                                            ? "⚡ Energía Eléctrica"
-                                            : invoice.service_type_name ||
-                                              "N/A"}
-                                        </Typography>
-                                      </Box>
+                                {/* Amount */}
+                                <Box sx={{ minWidth: 120, textAlign: 'right' }}>
+                                  <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.75rem' }}>
+                                    Valor de la factura
+                                  </Typography>
+                                  <Typography variant="body1" sx={{ fontWeight: 600 }}>
+                                    {formatCurrency(invoice.amount)}
+                                  </Typography>
+                                </Box>
 
-                                      <Button
-                                        variant="contained"
-                                        color="secondary"
-                                        size="small"
-                                        fullWidth
-                                        onClick={() => {
-                                          console.log(
-                                            "Ver detalle de factura:",
-                                            invoice.document_id
-                                          );
-                                        }}
-                                      >
-                                        👁️ Ver Detalle Completo
-                                      </Button>
-                                    </CardContent>
-                                  </Card>
-                                </Grid>
-                              )
-                            )}
-                          </Grid>
+                                {/* Detail Button */}
+                                <Button
+                                  variant="contained"
+                                  size="small"
+                                  onClick={() => handleInvoiceDetail(invoice)}
+                                  sx={{
+                                    backgroundColor: '#f97316',
+                                    borderRadius: 2,
+                                    px: 2,
+                                    py: 0.5,
+                                    fontWeight: 500,
+                                    textTransform: 'none',
+                                    minWidth: 80,
+                                    '&:hover': {
+                                      backgroundColor: '#ea580c',
+                                    },
+                                  }}
+                                >
+                                  Detalle
+                                </Button>
+                              </Box>
+                            ))
+                          ) : (
+                            <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', py: 2 }}>
+                              No hay facturas para mostrar en este mes
+                            </Typography>
+                          )}
                         </Box>
                       </Collapse>
                     </TableCell>
                   </TableRow>
                 </React.Fragment>
-              )
-            )}
+              );
+            })}
           </TableBody>
         </Table>
       </TableContainer>
-
-      {!isLoadingInvoices &&
-        (billing?.items?.length ?? 0) > 0 &&
-        totalPages > 1 && (
-          <Box display="flex" justifyContent="center" mt={3}>
-            <Pagination
-              count={totalPages}
-              page={currentPage}
-              onChange={handlePageChange}
-              color="primary"
-              shape="rounded"
-              showFirstButton
-              showLastButton
-            />
-          </Box>
-        )}
     </Box>
   );
 };

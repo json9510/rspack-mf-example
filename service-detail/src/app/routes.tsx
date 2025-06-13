@@ -15,7 +15,7 @@ const AppRoutes = () => {
         <Route path="*" element={
           <div style={{ padding: '20px', textAlign: 'center' }}>
             <h2>🛠️ Service Detail App</h2>
-            <p>Navega a: <a href="/attention/123">/attention/123</a></p>
+            <p>Navega a: <a href="/services/attention/123">/services/attention/123</a></p>
           </div>
         } />
       </Routes>

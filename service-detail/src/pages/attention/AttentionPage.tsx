@@ -28,78 +28,84 @@ const AttentionPage = () => {
   }
 
   return (
-    <Container maxWidth="xl" sx={{ py: 2 }}>
-      {/* Breadcrumbs */}
-      <Box mb={3}>
-        <Breadcrumbs aria-label="breadcrumb">
-          <Link
-            underline="hover"
-            sx={{ display: "flex", alignItems: "center" }}
-            color="inherit"
-            href="#/"
-          >
-            <HomeIcon sx={{ mr: 0.5 }} fontSize="inherit" />
-            Servicios
-          </Link>
-          <Link
-            underline="hover"
-            sx={{ display: "flex", alignItems: "center" }}
-            color="inherit"
-            href="#/"
-          >
-            <BuildIcon sx={{ mr: 0.5 }} fontSize="inherit" />
-            Service Detail
-          </Link>
-          <Typography
-            sx={{ display: "flex", alignItems: "center" }}
-            color="text.primary"
-          >
-            🎯 Atención - Servicio {id}
+    <Box sx={{ 
+      minHeight: '100vh',
+      backgroundColor: '#f8f9fa',
+    }}>
+      <Container maxWidth="xl" sx={{ py: 2 }}>
+        {/* Breadcrumbs */}
+        <Box mb={3}>
+          <Breadcrumbs aria-label="breadcrumb">
+            <Link
+              underline="hover"
+              sx={{ display: "flex", alignItems: "center" }}
+              color="inherit"
+              href="#/"
+            >
+              <HomeIcon sx={{ mr: 0.5 }} fontSize="inherit" />
+              Servicios
+            </Link>
+            <Link
+              underline="hover"
+              sx={{ display: "flex", alignItems: "center" }}
+              color="inherit"
+              href="#/"
+            >
+              <BuildIcon sx={{ mr: 0.5 }} fontSize="inherit" />
+              Service Detail
+            </Link>
+            <Typography
+              sx={{ display: "flex", alignItems: "center" }}
+              color="text.primary"
+            >
+              🎯 Atención - Servicio {id}
+              {userId && (
+                <span style={{ marginLeft: 8 }}>👤 Usuario: {userId}</span>
+              )}
+            </Typography>
+          </Breadcrumbs>
+        </Box>
+
+        {/* Main Content */}
+        <Grid container spacing={3}>
+          {/* Left Menu - Information Panel */}
+          <Grid size={{ xs: 12, lg: 4 }}>
+            {/* biome-ignore lint/style/noNonNullAssertion: <explanation> */}
+            <LeftMenuOrganism serviceId={id} userId={userId!} />
+          </Grid>
+
+          {/* Right Content - Billing Tab */}
+          <Grid size={{ xs: 12, lg: 8 }}>
+            <Box
+              sx={{
+                minHeight: "600px",
+                backgroundColor: "white",
+                borderRadius: 2,
+                p: 3,
+                boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+                border: '1px solid #e5e7eb'
+              }}
+            >
+              <BillingTab serviceId={id} />
+            </Box>
+          </Grid>
+        </Grid>
+
+        {/* Footer Info */}
+        <Box mt={4} p={2} bgcolor="grey.50" borderRadius={2}>
+          <Typography variant="body2" color="text.secondary" align="center">
+            🔧 <strong>Proyecto de Migración:</strong> LeftMenu + Billing Tab | 📅
+            Datos simulados para demostración | 🎯 Servicio ID: <code>{id}</code>
             {userId && (
-              <span style={{ marginLeft: 8 }}>👤 Usuario: {userId}</span>
+              <>
+                {" | "}
+                <strong>Usuario ID:</strong> <code>{userId}</code>
+              </>
             )}
           </Typography>
-        </Breadcrumbs>
-      </Box>
-
-      {/* Main Content */}
-      <Grid container spacing={3}>
-        {/* Left Menu - Information Panel */}
-        <Grid size={{ xs: 12, lg: 4 }}>
-          {/* biome-ignore lint/style/noNonNullAssertion: <explanation> */}
-          <LeftMenuOrganism serviceId={id} userId={userId!} />
-        </Grid>
-
-        {/* Right Content - Billing Tab */}
-        <Grid size={{ xs: 12, lg: 8 }}>
-          <Box
-            sx={{
-              minHeight: "600px",
-              backgroundColor: "white",
-              borderRadius: 2,
-              p: 3,
-              boxShadow: 1,
-            }}
-          >
-            <BillingTab serviceId={id} />
-          </Box>
-        </Grid>
-      </Grid>
-
-      {/* Footer Info */}
-      <Box mt={4} p={2} bgcolor="grey.50" borderRadius={2}>
-        <Typography variant="body2" color="text.secondary" align="center">
-          🔧 <strong>Proyecto de Migración:</strong> LeftMenu + Billing Tab | 📅
-          Datos simulados para demostración | 🎯 Servicio ID: <code>{id}</code>
-          {userId && (
-            <>
-              {" | "}
-              <strong>Usuario ID:</strong> <code>{userId}</code>
-            </>
-          )}
-        </Typography>
-      </Box>
-    </Container>
+        </Box>
+      </Container>
+    </Box>
   );
 };
 
